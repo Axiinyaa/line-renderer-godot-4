@@ -1,15 +1,28 @@
-extends ImmediateGeometry
+@tool
+extends MeshInstance3D
+class_name LineRenderer3D
 
-export var points = [Vector3(0,0,0),Vector3(0,5,0)]
-export var startThickness = 0.1
-export var endThickness = 0.1
-export var cornerSmooth = 5
-export var capSmooth = 5
-export var drawCaps = true
-export var drawCorners = true
-export var globalCoords = true
-export var scaleTexture = true
+@export_category("Update Render (Editor Only)")
+##Pressing this will update the mesh. This include position, properties and materials.
+@export var update: bool = true
 
+@export_category("Line Points")
+@export var points: Array[Vector3]
+
+@export_category("Line Properties")
+@export var startThickness = 0.1
+@export var endThickness = 0.1
+@export var cornerSmooth = 5
+@export var capSmooth = 5
+@export var drawCaps = true
+@export var drawCorners = true
+@export var globalCoords = true
+@export var scaleTexture = true
+
+@export_category("Line Material")
+@export var lineMaterial: StandardMaterial3D
+
+var geometry: ImmediateMesh
 var camera
 var cameraOrigin
 
@@ -17,10 +30,23 @@ func _ready():
 	pass
 
 func _process(delta):
-	if points.size() < 2:
+	
+	# This tool script is laggy in editor, users can preview changes by pressing this.
+	if update and Engine.is_editor_hint():
 		return
 	
-	camera = get_viewport().get_camera()
+	if points.size() < 2:
+		push_warning('In order for line to render, there needs to be 2 or more points.')
+		update = true
+		return
+		
+	update = true
+	
+	if Engine.is_editor_hint():
+		camera = get_editor_camera()
+	else:
+		camera = get_viewport().get_camera_3d()
+	
 	if camera == null:
 		return
 	cameraOrigin = to_local(camera.get_global_transform().origin)
@@ -30,8 +56,10 @@ func _process(delta):
 	var thickness = lerp(startThickness, endThickness, progress);
 	var nextThickness = lerp(startThickness, endThickness, progress + progressStep);
 	
-	clear()
-	begin(Mesh.PRIMITIVE_TRIANGLES)
+	geometry = ImmediateMesh.new()
+	
+	geometry.clear_surfaces()
+	geometry.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
 	
 	for i in range(points.size() - 1):
 		var A = points[i]
@@ -59,31 +87,31 @@ func _process(delta):
 			var ABFloor = floor(ABLen)
 			var ABFrac = ABLen - ABFloor
 			
-			set_uv(Vector2(ABFloor, 0))
-			add_vertex(AtoABStart)
-			set_uv(Vector2(-ABFrac, 0))
-			add_vertex(BtoABEnd)
-			set_uv(Vector2(ABFloor, 1))
-			add_vertex(AfromABStart)
-			set_uv(Vector2(-ABFrac, 0))
-			add_vertex(BtoABEnd)
-			set_uv(Vector2(-ABFrac, 1))
-			add_vertex(BfromABEnd)
-			set_uv(Vector2(ABFloor, 1))
-			add_vertex(AfromABStart)
+			geometry.surface_set_uv(Vector2(ABFloor, 0))
+			geometry.surface_add_vertex(AtoABStart)
+			geometry.surface_set_uv(Vector2(-ABFrac, 0))
+			geometry.surface_add_vertex(BtoABEnd)
+			geometry.surface_set_uv(Vector2(ABFloor, 1))
+			geometry.surface_add_vertex(AfromABStart)
+			geometry.surface_set_uv(Vector2(-ABFrac, 0))
+			geometry.surface_add_vertex(BtoABEnd)
+			geometry.surface_set_uv(Vector2(-ABFrac, 1))
+			geometry.surface_add_vertex(BfromABEnd)
+			geometry.surface_set_uv(Vector2(ABFloor, 1))
+			geometry.surface_add_vertex(AfromABStart)
 		else:
-			set_uv(Vector2(1, 0))
-			add_vertex(AtoABStart)
-			set_uv(Vector2(0, 0))
-			add_vertex(BtoABEnd)
-			set_uv(Vector2(1, 1))
-			add_vertex(AfromABStart)
-			set_uv(Vector2(0, 0))
-			add_vertex(BtoABEnd)
-			set_uv(Vector2(0, 1))
-			add_vertex(BfromABEnd)
-			set_uv(Vector2(1, 1))
-			add_vertex(AfromABStart)
+			geometry.surface_set_uv(Vector2(1, 0))
+			geometry.surface_add_vertex(AtoABStart)
+			geometry.surface_set_uv(Vector2(0, 0))
+			geometry.surface_add_vertex(BtoABEnd)
+			geometry.surface_set_uv(Vector2(1, 1))
+			geometry.surface_add_vertex(AfromABStart)
+			geometry.surface_set_uv(Vector2(0, 0))
+			geometry.surface_add_vertex(BtoABEnd)
+			geometry.surface_set_uv(Vector2(0, 1))
+			geometry.surface_add_vertex(BfromABEnd)
+			geometry.surface_set_uv(Vector2(1, 1))
+			geometry.surface_add_vertex(AfromABStart)
 		
 		if i == points.size() - 2:
 			if drawCaps:
@@ -108,11 +136,31 @@ func _process(delta):
 		thickness = lerp(startThickness, endThickness, progress);
 		nextThickness = lerp(startThickness, endThickness, progress + progressStep);
 	
-	end()
+	geometry.surface_end()
+	geometry.surface_set_material(0, lineMaterial)
+	mesh = geometry
 
-func cap(center, pivot, thickness, smoothing):
+func find_editor_cameras(nodes: Array, cameras: Array) -> void:	
+	for child in nodes:
+		find_editor_cameras(child.get_children(), cameras)
+		if child is Camera3D:
+			cameras.push_back(child)
+
+func get_editor_cameras() -> Array[Camera3D]:
+	
+	# EditorScript as Variant to stop game from crashing when running.
+	var ei = (EditorScript as Variant).new().get_editor_interface()
+	var cameras: Array[Camera3D]
+	find_editor_cameras(ei.get_editor_main_screen().get_children(), cameras)
+	return cameras
+
+func get_editor_camera():
+	var editor_cameras: Array[Camera3D]
+	return get_editor_cameras()[0]
+
+func cap(center, pivot, thickness, smoothing: float):
 	var orthogonal = (cameraOrigin - center).cross(center - pivot).normalized() * thickness;
-	var axis = (center - cameraOrigin).normalized();
+	var axis: Vector3 = (center - cameraOrigin).normalized();
 	
 	var array = []
 	for i in range(smoothing + 1):
@@ -121,15 +169,15 @@ func cap(center, pivot, thickness, smoothing):
 	array[smoothing] = center - orthogonal;
 	
 	for i in range(1, smoothing):
-		array[i] = center + (orthogonal.rotated(axis, lerp(0, PI, float(i) / smoothing)));
+		array[i] = center + (orthogonal.rotated(axis, lerp(0.0, PI, float(i / smoothing))));
 	
 	for i in range(1, smoothing + 1):
-		set_uv(Vector2(0, (i - 1) / smoothing))
-		add_vertex(array[i - 1]);
-		set_uv(Vector2(0, (i - 1) / smoothing))
-		add_vertex(array[i]);
-		set_uv(Vector2(0.5, 0.5))
-		add_vertex(center);
+		geometry.surface_set_uv(Vector2(0, (i - 1) / smoothing))
+		geometry.surface_add_vertex(array[i - 1]);
+		geometry.surface_set_uv(Vector2(0, (i - 1) / smoothing))
+		geometry.surface_add_vertex(array[i]);
+		geometry.surface_set_uv(Vector2(0.5, 0.5))
+		geometry.surface_add_vertex(center);
 		
 func corner(center, start, end, smoothing):
 	var array = []
@@ -146,10 +194,9 @@ func corner(center, start, end, smoothing):
 		array[i] = center + offset.rotated(axis, lerp(0, angle, float(i) / smoothing));
 	
 	for i in range(1, smoothing + 1):
-		set_uv(Vector2(0, (i - 1) / smoothing))
-		add_vertex(array[i - 1]);
-		set_uv(Vector2(0, (i - 1) / smoothing))
-		add_vertex(array[i]);
-		set_uv(Vector2(0.5, 0.5))
-		add_vertex(center);
-		
+		geometry.surface_set_uv(Vector2(0, (i - 1) / smoothing))
+		geometry.surface_add_vertex(array[i - 1]);
+		geometry.surface_set_uv(Vector2(0, (i - 1) / smoothing))
+		geometry.surface_add_vertex(array[i]);
+		geometry.surface_set_uv(Vector2(0.5, 0.5))
+		geometry.surface_add_vertex(center);
