@@ -21,7 +21,7 @@ To edit the line's points, simply edit the `points` member variable of the line 
 - Line doesn't update position or parameters in editor due to performance reasons, however, pressing the Update button in the line renderer will allow you to preview your changes.
 
 ## License
-MIT License (credit to @paulohyy for initial implementation)
+MIT License (credit to @paulohyy for initial C# implementation, and @dbp8890 for the GDScript 1.0 implementation.)
 
 ## Example Code
 ```gdscript
