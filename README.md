@@ -2,8 +2,8 @@
 A GDScript implementation of a line renderer in Godot, useful for rendering cylindrical volume such as lasers, trails, etc. Based on the helpful C# implementation by @paulohyy at https://github.com/paulohyy/linerenderer, with some additional features such as UV tiling and a .tscn file for ease of use.
 
 ## Instructions
-1. Simply download and unzip the folder, which contains a demo project. If the demo project is not needed, the `LineRenderer` subfolder can be copied directly into the Godot project.
-2. Drag and drop the `LineRenderer.tscn` scene into the project, and you should see a line! **Note: There appears to be a bug in certain versions of Godot 3.0 that causes problems involving not being able to edit instanced arrays. Make sure to right click and toggle "Discard Instancing" if you encounter this.**
+1. Simply download and unzip the folder, the `LineRenderer` subfolder can be copied directly into the Godot project.
+2. Drag and drop the `LineRenderer.tscn` scene into the project, press the update button, and you should see a line!
 
 To edit the line's points, simply edit the `points` member variable of the line renderer, and add/remove points from the array. This can also be done via the editor in Godot.
 
@@ -22,3 +22,13 @@ To edit the line's points, simply edit the `points` member variable of the line 
 
 ## License
 MIT License (credit to @paulohyy for initial implementation)
+
+## Example Code
+```gdscript
+@export var line: LineRenderer3D
+@export var target_position: Vector3
+
+func _process(delta):
+  line.points = [global_position, target_position]
+```
+This will draw a line between the origin of the object and the target destination every frame.
