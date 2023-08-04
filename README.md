@@ -5,9 +5,7 @@ A GDScript implementation of a line renderer in Godot, useful for rendering cyli
 1. Simply download and unzip the folder, which contains a demo project. If the demo project is not needed, the `LineRenderer` subfolder can be copied directly into the Godot project.
 2. Drag and drop the `LineRenderer.tscn` scene into the project, and you should see a line! **Note: There appears to be a bug in certain versions of Godot 3.0 that causes problems involving not being able to edit instanced arrays. Make sure to right click and toggle "Discard Instancing" if you encounter this.**
 
-To edit the line's points, simply edit the `points` member variable of the line renderer, and add/remove points from the array (see demo project for details). This can also be done via the editor in Godot.
-
-![Demonstration](https://github.com/dbp8890/LineRenderer/blob/master/linerendererdemo.gif)
+To edit the line's points, simply edit the `points` member variable of the line renderer, and add/remove points from the array. This can also be done via the editor in Godot.
 
 ## Features
 - **Start thickness/end thickness**: how thick to make the line, which will be interpolated between each segment.
@@ -20,12 +18,7 @@ To edit the line's points, simply edit the `points` member variable of the line 
 - Since this effectively uses camera-facing billboards, as with most billboards, certain angles can break the illusion of cylindrical volume.
 - Corners and caps currently have suboptimal UV mapping, but textures formed in the shape of a line should generally work well.
 - Texture scaling doesn't connect neatly to each segment at the moment; however, this is not very noticable in most cases.
-
-## Demo Instructions
-To use the demo, click anywhere on the screen to add a line segment. The camera automatically orbits around a point; use the arrow keys to change direction.
+- Line doesn't update position or parameters in editor due to performance reasons, however, pressing the Update button in the line renderer will allow you to preview your changes.
 
 ## License
 MIT License (credit to @paulohyy for initial implementation)
-
-## Other
-Next up: trails! I'll try to see if I can implement this if I have the time. (Although this can be done with the Line Renderer, camera-facing/billboarded trails are not always desired.)
